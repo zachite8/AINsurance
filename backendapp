@@ -1,0 +1,22 @@
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+import openai, os
+from pydantic import BaseModel
+
+app = FastAPI()
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+openai.api_key = os.getenv("OPENAI_API_KEY")
+
+class InsuranceRequest(BaseModel):
+    location: str
+    insurance_type: str
+    user_preferences: str = ""
+
+@app.post("/recommend")
+async def recommend(req: InsuranceRequest):
+    prompt = f"Recommend providers in {req.location} for {req.insurance_type}. Preferences: {req.user_preferences}"
+    resp = openai.ChatCompletion.create(
+        model="gpt-4o",
+        messages=[{"role":"system","content":"You are expert agent."},{"role":"user","content":prompt}]
+    )
+    return {"recommendation": resp.choices[0].message.content}
